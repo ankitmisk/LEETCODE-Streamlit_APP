@@ -52,11 +52,11 @@ if st.session_state.user is None:
     username = st.text_input("Enter your name to continue")
 
     if st.button("Login"):
-    if username.strip():
-        st.session_state.user = username.strip()
-        st.rerun()
-    else:
-        st.warning("Please enter a valid name.")
+        if username.strip():
+            st.session_state.user = username.strip()
+            st.rerun()
+        else:
+            st.warning("Please enter a valid name.")
 
     st.stop()
 
