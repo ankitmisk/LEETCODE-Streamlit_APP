@@ -25,9 +25,6 @@ if "user" not in st.session_state:
 if "progress" not in st.session_state:
     st.session_state.progress = 0
 
-if "theme" not in st.session_state:
-    st.session_state.theme = "Dark"
-
 if "rank" not in st.session_state:
     st.session_state.rank = random.choice(
         ["Bronze 🟤", "Silver ⚪", "Gold 🟡", "Platinum 🔵", "Diamond 💎"]
@@ -61,27 +58,6 @@ if st.session_state.user is None:
     st.stop()
 
 # --------------------------------
-# THEME SETTINGS
-# --------------------------------
-is_dark = st.session_state.theme == "Dark"
-editor_theme = "monokai" if is_dark else "chrome"
-
-bg_color = "#0e1117" if is_dark else "#ffffff"
-text_color = "#ffffff" if is_dark else "#000000"
-
-st.markdown(
-    f"""
-    <style>
-    .stApp {{
-        background-color: {bg_color};
-        color: {text_color};
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# --------------------------------
 # TOP BAR (AVATAR + PROGRESS)
 # --------------------------------
 col_a, col_b, col_c = st.columns([2, 4, 2])
@@ -102,17 +78,6 @@ st.divider()
 # SIDEBAR
 # --------------------------------
 st.sidebar.title("🧠 SQL Practice Lab")
-
-st.sidebar.toggle(
-    "🌗 Dark / Light Mode",
-    value=is_dark,
-    key="theme_toggle"
-)
-
-if st.session_state.theme_toggle:
-    st.session_state.theme = "Dark"
-else:
-    st.session_state.theme = "Light"
 
 difficulty = st.sidebar.selectbox(
     "Difficulty",
@@ -159,12 +124,12 @@ with col2:
         st.code(solutions[question["id"]])
 
 # --------------------------------
-# SQL EDITOR
+# SQL EDITOR (LIGHT THEME)
 # --------------------------------
 user_query = st_ace(
     placeholder="-- Write your SQL query here",
     language="sql",
-    theme=editor_theme,
+    theme="chrome",   # ☀️ Day mode editor
     keybinding="vscode",
     font_size=15,
     min_lines=14,
@@ -193,11 +158,9 @@ if st.button("▶ Run Query"):
         if validate(user_df, expected_df):
             st.success("🎉 HURRAY! Correct Answer 🥳🔥")
             st.balloons()
-
             st.session_state.progress = min(
                 st.session_state.progress + 10, 100
             )
-
         else:
             st.error("❌ Output does not match expected result.")
 
