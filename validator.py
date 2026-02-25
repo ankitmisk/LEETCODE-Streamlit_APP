@@ -1,10 +1,18 @@
-import pandas as pd
+import re
 
-def normalize_df(df):
-    return df.sort_index(axis=1).sort_values(by=df.columns.tolist()).reset_index(drop=True)
+def is_safe_query(query):
+    forbidden = [
+        "delete", "drop", "update", "alter",
+        "insert", "truncate", "create", "replace"
+    ]
+    q = query.lower()
+    return not any(re.search(rf"\b{word}\b", q) for word in forbidden)
+
+def normalize(df):
+    return df.sort_index(axis=1).reset_index(drop=True)
 
 def validate(user_df, expected_df):
     try:
-        return normalize_df(user_df).equals(normalize_df(expected_df))
+        return normalize(user_df).equals(normalize(expected_df))
     except:
         return False
