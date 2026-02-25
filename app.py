@@ -1,61 +1,104 @@
 import streamlit as st
 import pandas as pd
+from streamlit_ace import st_ace
+
 from database import setup_database, get_connection
 from questions import questions
 from solutions import solutions
-from validator import validate
+from validator import is_safe_query, validate
 
-st.set_page_config(page_title="SQL Practice App", layout="wide")
+st.set_page_config(page_title="SQL Practice Lab", layout="wide")
 
 setup_database()
 conn = get_connection()
 
+# 🎧 Typing + Click Sound
+st.components.v1.html("""
+<script>
+const keySound = new Audio("https://www.soundjay.com/mechanical/keyboard-1.mp3");
+document.addEventListener("keydown", () => {
+  keySound.volume = 0.15;
+  keySound.currentTime = 0;
+  keySound.play();
+});
+</script>
+""", height=0)
+
+# Sidebar
 st.sidebar.title("🧠 SQL Practice")
 
-difficulty = st.sidebar.selectbox("Select Difficulty", ["Easy", "Intermediate", "Hard"])
+difficulty = st.sidebar.selectbox(
+    "Difficulty",
+    ["Easy", "Intermediate", "Hard", "Very Hard"]
+)
 
-filtered_questions = [q for q in questions if q["difficulty"] == difficulty]
+filtered = [q for q in questions if q["difficulty"] == difficulty]
+question_map = {q["question"]: q for q in filtered}
+selected_q = st.sidebar.selectbox("Questions", question_map.keys())
 
-question_texts = {q["question"]: q for q in filtered_questions}
-selected_question = st.sidebar.selectbox("Choose Question", question_texts.keys())
+question = question_map[selected_q]
 
-question = question_texts[selected_question]
+# Sample Tables
+st.sidebar.markdown("### 📊 Sample Records")
 
-st.sidebar.markdown("### 📋 Tables")
-st.sidebar.code("""
-employees(emp_id, name, department, salary, join_date)
-departments(dept_id, dept_name)
-""")
+st.sidebar.write("**Employees**")
+st.sidebar.dataframe(
+    pd.read_sql("SELECT * FROM employees LIMIT 5", conn),
+    use_container_width=True
+)
 
-show_hint = st.sidebar.button("💡 Show Hint")
-show_solution = st.sidebar.button("🧩 Show Solution")
+st.sidebar.write("**Departments**")
+st.sidebar.dataframe(
+    pd.read_sql("SELECT * FROM departments LIMIT 5", conn),
+    use_container_width=True
+)
 
+# Expected Output
+st.sidebar.markdown("### ✅ Expected Output")
+expected_df = pd.read_sql(question["expected_query"], conn)
+st.sidebar.dataframe(expected_df, use_container_width=True)
+
+# Main Area
 st.title("🧪 SQL Coding Playground")
-
 st.subheader("📘 Question")
 st.write(question["question"])
 
-if show_hint:
-    st.info("Think about SELECT, WHERE, GROUP BY, JOIN based on question")
+if st.button("💡 Hint"):
+    st.info(question["hint"])
 
-if show_solution:
+if st.button("🧩 Solution"):
     st.code(solutions[question["id"]])
 
-user_query = st.text_area("✍️ Write your SQL query here", height=200)
+# SQL Editor
+user_query = st_ace(
+    placeholder="Write your SQL query here...",
+    language="sql",
+    theme="sqlserver",
+    keybinding="vscode",
+    min_lines=10,
+    font_size=14
+)
 
+# Run Query
 if st.button("▶ Run Query"):
+    if not user_query:
+        st.warning("Write a query first.")
+        st.stop()
+
+    if not is_safe_query(user_query):
+        st.error("⛔ Only SELECT queries allowed.")
+        st.stop()
+
     try:
         user_df = pd.read_sql(user_query, conn)
-        expected_df = pd.read_sql(question["expected_query"], conn)
-
-        st.subheader("📤 Output")
-        st.dataframe(user_df)
+        st.subheader("📤 Your Output")
+        st.dataframe(user_df, use_container_width=True)
 
         if validate(user_df, expected_df):
             st.success("🎉 Hurray! Correct Answer 🥳🔥")
             st.balloons()
         else:
-            st.error("❌ Incorrect output. Try again!")
+            st.error("❌ Output does not match. Try again!")
 
     except Exception as e:
         st.error(f"⚠ SQL Error: {e}")
