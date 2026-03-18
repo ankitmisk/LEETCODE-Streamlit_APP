@@ -93,6 +93,7 @@ question = question_map[selected_question]
 # SAMPLE DATA
 # --------------------------------
 st.sidebar.markdown("### 📊 Sample Records")
+st.sidebar.markdown("#### 📊 Table name:  employees")
 
 st.sidebar.dataframe(
     pd.read_sql("SELECT * FROM employees LIMIT 5", conn),
